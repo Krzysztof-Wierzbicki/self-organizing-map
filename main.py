@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import sys
 
 from neuron import *
+from rank import *
 
 #stderr = sys.stderr
 #log = open('out.log', 'w')
