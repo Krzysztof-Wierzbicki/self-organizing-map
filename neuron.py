@@ -1,8 +1,6 @@
 import numpy as np
 
-class Centroid:
-
-    points = []
+class Unit:
 
     def __init__(self, x, y):
         self._x = x
@@ -26,8 +24,27 @@ class Centroid:
     def pos(self, value):
         self._x = value[0]
         self._y = value[1]
+        
+class Centroid(Unit):
 
-class Neuron(Centroid):
+    def __init__(self, x, y):
+        self._data_sum = [0, 0]
+        self._data_count = 0
+        super().__init__(x, y)
+        
+    def add_datum(self, x, y):
+        self._data_sum[0] += x
+        self._data_sum[1] += y
+        self._data_count += 1
+        
+    def update(self):
+        if self._data_count > 0:
+            self._x = self._data_sum[0]/self._data_count
+            self._y = self._data_sum[1]/self._data_count
+            self._data_sum = [0, 0]
+            self._data_count = 0
+
+class Neuron(Unit):
         
     def set_rates(self, epsilon, lamb):
         self._lambda = lamb

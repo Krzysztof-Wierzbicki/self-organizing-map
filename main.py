@@ -71,5 +71,34 @@ for epoch in range(100):
                 w_0 = rankK[k].pos[:]
             rankK[k].update(w_0, x, y)
 
+#k-means
+      
+C = [Centroid(rnd.normal(x_mu, x_sigma), rnd.normal(y_mu, y_sigma)) for _ in range(neuron_count)]
+      
+for epoch in range(100):
+    fig.clear()
+      
+    plt.plot(data[:, 0], data[:, 1], 'k.')
+    plt.plot([i._x for i in C], [i._y for i in C], 'go')
+    
+    plt.xlabel('sepal width')
+    plt.ylabel('sepal length')
+    plt.title('Epoch {}'.format(epoch))
+    
+    plt.pause(0.1)
+    
+    for x, y in data[:,:2]:
+        rank = {}
+        for c in C:
+            rank[c.distance(x, y)] = c
+
+        lowest_distance = min(rank.keys())
+        ld_count = list(rank.keys()).count(lowest_distance)
+        random_key = sorted(rank.keys())[rnd.randint(ld_count)]
+        rank[random_key].add_datum(x, y) #get value by key that is in position 0 in sorted list of keys
+        
+    for c in C:
+        c.update()
+
 #sys.stderr = stderr      
 #log.close()
