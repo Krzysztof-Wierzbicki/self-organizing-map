@@ -15,10 +15,8 @@ data = pd.read_csv('iris.data', header=None).iloc[:, :2].values
 
 neuron_count = 5
 
-x_mu = data[:, 0].mean()
-x_sigma = data[:, 0].std()
-y_mu = data[:, 1].mean()
-y_sigma = data[:, 1].std()
+mu = data[:, :].mean(axis=0)
+sigma = data[:, :].std(axis=0)
 
 # kohonen
 def G(d, l):
@@ -30,21 +28,23 @@ def F(d, l):
 def H(d, l):
     return 1 if d<l else 0
     
-NK = [NeuronKHN(rnd.normal(x_mu, x_sigma), rnd.normal(y_mu, y_sigma)) for _ in range(neuron_count)]
-    
-for n in NK:
-    n.set_rates(0.01, 0.3)
-    n.set_function(F)
+NK = [NeuronKHN([rnd.normal(m, s) for m, s in zip(mu, sigma)]) for _ in range(neuron_count)]
+
+NeuronKHN.set_epsilon(0.01)
+NeuronKHN.set_lambda(0.0000001)
+NeuronKHN.set_function(G)
+#NeuronKHN.set_lambda(0.5)
+#NeuronKHN.set_function(H)
 
 fig = plt.figure(1)
 
-for epoch in range(100):
+for epoch in range(40):
     rnd.shuffle(data)
 
     fig.clear()
       
     plt.plot(data[:, 0], data[:, 1], 'k.')
-    plt.plot([i._x for i in NK], [i._y for i in NK], 'bo')
+    plt.plot([i.pos[0] for i in NK], [i.pos[1] for i in NK], 'bo')
     
     plt.xlabel('sepal width')
     plt.ylabel('sepal length')
@@ -53,30 +53,30 @@ for epoch in range(100):
     plt.pause(0.03)
     
     for x, y in data[:,:2]:
-        rankK = {}
-        for nk in NK:
-            rankK[nk.distance(x, y)] = nk
-        for i, k in enumerate(sorted(rankK.keys())):
-            if i==0:
-                w_0 = rankK[k].pos[:]
-            rankK[k].update(w_0, x, y)
+        rank = Rank()
+        for n in NK:
+            rank[n] = n.distance([x, y])
+                
+        w_0 = rank.best().pos
+        for n in rank:
+            n.update(w_0, [x, y])
 
 # neural gas
-NG = [NeuronNG(rnd.normal(x_mu, x_sigma), rnd.normal(y_mu, y_sigma)) for _ in range(neuron_count)]
+NG = [NeuronNG([rnd.normal(m, s) for m, s in zip(mu, sigma)]) for _ in range(neuron_count)]
 
-for n in NG:
-    n.set_rates(0.01, 0.5) 
-    n.pre_count(neuron_count)
+NeuronNG.set_epsilon(0.01)
+NeuronNG.set_lambda(0.5) 
+NeuronNG.pre_count(neuron_count)
 
 fig = plt.figure(1)
 
-for epoch in range(100):
+for epoch in range(50):
     rnd.shuffle(data)
 
     fig.clear()
       
     plt.plot(data[:, 0], data[:, 1], 'k.')
-    plt.plot([i._x for i in NG], [i._y for i in NG], 'ro')
+    plt.plot([i.pos[0] for i in NG], [i.pos[1] for i in NG], 'ro')
     
     plt.xlabel('sepal width')
     plt.ylabel('sepal length')
@@ -85,20 +85,20 @@ for epoch in range(100):
     plt.pause(0.03)
     
     for x, y in data[:,:2]:
-        rankG = {}
-        for ng in NG:
-            rankG[ng.distance(x, y)] = ng
-        for i, k in enumerate(sorted(rankG.keys())):
-            rankG[k].update(i, x, y)
+        rank = Rank()
+        for n in NG:
+            rank[n] = n.distance([x, y])
+        for i, n in enumerate(rank):
+            n.update(i, [x, y])
 
 #k-means
-C = [Centroid(rnd.normal(x_mu, x_sigma), rnd.normal(y_mu, y_sigma)) for _ in range(neuron_count)]
+C = [Centroid([rnd.normal(m, s) for m, s in zip(mu, sigma)]) for _ in range(neuron_count)]
       
-for epoch in range(100):
+for epoch in range(30):
     fig.clear()
       
     plt.plot(data[:, 0], data[:, 1], 'k.')
-    plt.plot([i._x for i in C], [i._y for i in C], 'go')
+    plt.plot([i.pos[0] for i in C], [i.pos[1] for i in C], 'go')
     
     plt.xlabel('sepal width')
     plt.ylabel('sepal length')
@@ -107,14 +107,11 @@ for epoch in range(100):
     plt.pause(0.1)
     
     for x, y in data[:,:2]:
-        rank = {}
+        rank = Rank()
         for c in C:
-            rank[c.distance(x, y)] = c
+            rank[c] = c.distance([x, y])
 
-        lowest_distance = min(rank.keys())
-        ld_count = list(rank.keys()).count(lowest_distance)
-        random_key = sorted(rank.keys())[rnd.randint(ld_count)]
-        rank[random_key].add_datum(x, y) #get value by key that is in position 0 in sorted list of keys
+        rank.best().add_datum([x, y])
         
     for c in C:
         c.update()

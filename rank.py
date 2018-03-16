@@ -1,38 +1,18 @@
 from numpy.random import randint
 
-class Rank:
+class Rank(dict):
     """
-    Container dict like class for choosing element bound to top one key
-    
-    Allows to get top one object based on key value. An instance of class does
-    not store all the values and keys, only best matching one so far. If more
-    than one object corresponds to best key value, the returned object is 
-    randomly chosen from them. Use it dictionary-like, assigning rank to object.
-    
-    Example:
-        r = Rank()
-        r[object] = rank
-        (...)
-        r.get() # returns best match
+    Sorted dictionary with generator based iteration over itself and best element chosing
     """
     
-    def __init__(self):
-        self._items = []
-        self._value = 21371488
+    def __iter__(self):
+        return [i for i, j in sorted(self.items(), key = lambda pair: pair[1])].__iter__()
         
-    def __setitem__(self, item, value):
-        if value < self._value:
-            self._items = [item]
-            self._value = value
-        elif value == self._value:
-            self._items.append[item]
-        
-    def get(self):
-        if len(self._items) == 1:
-            return self._items[0]
+    def best(self):
+        sorted_k = sorted(self.values())
+        l = sorted_k.count(sorted_k[0])
+        if l == 1:
+            return sorted(self.items(), key = lambda pair: pair[1])[0][0]
         else:
-            return self._items[randint(len(self._items))]
-
-    def clear(self):
-        self.__init__()        
+            return sorted(self.items(), key = lambda pair: pair[1])[randint(l)][0]
 
