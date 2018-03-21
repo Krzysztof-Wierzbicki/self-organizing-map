@@ -11,6 +11,13 @@ from parsing import *
 #log = open('out.log', 'w')
 #sys.stderr = log
 
+def normalize(data):
+    mean = data.mean(axis=0)
+    std  = data.std(axis=0)
+    for i in range(data.shape[1]):
+        data[:, i] -= mean[i]
+        data[:, i] /= std[i]
+
 def make_neurons(cls, neuron_count, data):
     '''create neurons using normal distribution for given data'''
     return [cls([rnd.normal(m, s) for m, s in zip(data[:, :-1].mean(axis=0), data[:, :-1].std(axis=0))]) for _ in range(neuron_count)]
@@ -130,8 +137,9 @@ unit_class = central_structures[algorithm]
 fit        = algorithms[algorithm]
 G          = funcs[P.get_function()]
 
-# read data and add ownership column
+# read data, add ownership column, normalize
 data   = pd.read_csv(filename, header=None).iloc[:, columns].values
+normalize(data)
 filler = np.zeros([data.shape[0], 1], dtype=int)
 data   = np.append(data, filler, axis=1)
 
@@ -165,7 +173,7 @@ for epoch in range(loop_max):
 #        break
     
 if no_errors:
-    plot_error(errors, 'b')
+    plot_error(np.sqrt(np.array(errors)**2/data.shape[0]), 'b')
 
 #sys.stderr = stderr      
 #log.close()
