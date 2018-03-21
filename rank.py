@@ -2,7 +2,7 @@ from numpy.random import randint
 
 class Rank(dict):
     """
-    Sorted dictionary with generator based iteration over itself and best element chosing
+    Sorted dictionary with generator based iteration over itself and best element choosing
     """
     
     def __iter__(self):
