@@ -19,7 +19,7 @@ class Parsing:
                             help='don\'t plot errors')
         self._parser.add_argument('-c', '--count', type=int, default=100, 
                             help='set max number of epochs, default: 100')
-        self._parser.add_argument('-a', '--algorithm', default='kohonen', action='store', 
+        self._parser.add_argument('-a', '--algorithm', default='neural-gas', action='store', 
                             help='fitting algorithm', choices=self._algorithms)
         self._parser.add_argument('-f', '--function', default='other', action='store', 
                             help='kohonen function', choices=self._funcs)

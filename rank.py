@@ -9,8 +9,8 @@ class Rank(dict):
         return [i for i, j in sorted(self.items(), key = lambda pair: pair[1])].__iter__()
         
     def best(self):
-        sorted_k = sorted(self.values())
-        l = sorted_k.count(sorted_k[0])
+        # get number of minimal values
+        l = list(self.values()).count(min(self.values()))
         if l == 1:
             return sorted(self.items(), key = lambda pair: pair[1])[0][0]
         else:

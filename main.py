@@ -13,7 +13,7 @@ from parsing import *
 
 def make_neurons(cls, neuron_count, data):
     '''create neurons using normal distribution for given data'''
-    return [cls([rnd.normal(m, s) for m, s in zip(data[:, :].mean(axis=0), data[:, :].std(axis=0))]) for _ in range(neuron_count)]
+    return [cls([rnd.normal(m, s) for m, s in zip(data[:, :-1].mean(axis=0), data[:, :-1].std(axis=0))]) for _ in range(neuron_count)]
     
 def plot(data, data_name, neurons, algorithm, epoch, color):
     '''plot data and central structures'''
@@ -42,42 +42,46 @@ def plot_error(errors, color):
     
 def kohonen_fit(data, neurons):
     error = 0
-    for x, y in data[:, :data.shape[0]]:
+    for i, xy in enumerate(data[:, :-1]):
         rank = Rank()
         for n in neurons:
-            rank[n] = n.distance([x, y])
+            rank[n] = n.distance(xy)
                
-        bmu = rank.best() 
+        bmu = rank.best()
+        data[i, -1] = bmu.id
         w_0 = bmu.pos
-        error += bmu.distance([x, y])
+        error += bmu.distance(xy)
         for n in rank:
-            n.update(w_0, [x, y])
+            n.update(w_0, xy)
             
     return error
 
 def neural_gas_fit(data, neurons):
     error = 0
-    for x, y in data[:, :2]:
+    for i, xy in enumerate(data[:, :-1]):
         rank = Rank()
         for n in neurons:
-            rank[n] = n.distance([x, y])
+            rank[n] = n.distance(xy)
             
-        error += rank.best().distance([x, y])
-        for i, n in enumerate(rank):
-            n.update(i, [x, y])
+        bmu = rank.best()
+        data[i, -1] = bmu.id
+        error += bmu.distance(xy)
+        for j, n in enumerate(rank):
+            n.update(j, xy)
             
     return error
 
 def k_means_fit(data, centroids):
     error = 0
-    for x, y in data[:, :2]:
+    for i, xy in enumerate(data[:, :-1]):
         rank = Rank()
         for c in centroids:
-            rank[c] = c.distance([x, y])
+            rank[c] = c.distance(xy)
 
         bmu = rank.best()
-        bmu.add_datum([x, y])
-        error += bmu.distance([x, y])
+        data[i, -1] = bmu.id
+        bmu.add_datum(xy)
+        error += bmu.distance(xy)
         
     for c in centroids:
         c.update()
@@ -97,6 +101,7 @@ algorithms = {'kohonen':kohonen_fit, 'neural-gas':neural_gas_fit, 'k-means':k_me
 datasets = {'iris':'iris.data'}
 central_structures = {'kohonen':NeuronKHN, 'neural-gas':NeuronNG, 'k-means':Centroid}
 funcs = {'step':h, 'other':g}
+columns_d = {'iris':[0, 1]}
 
 # create argument parser, parse arguments and set constants
 P = Parsing()
@@ -104,8 +109,12 @@ P.init_parser(algorithms.keys(), datasets.keys(), funcs.keys())
 P.create_parser()
 P.parse()
 
-no_errors = P.get_no_errors()
-no_plot   = P.get_no_plot()
+no_errors    = P.get_no_errors()
+no_plot      = P.get_no_plot()
+if no_plot:
+    columns = columns_d[P.get_dataset()]
+else:
+    columns = slice(0, -1)
 
 lamb    = P.get_lambda()
 epsilon = P.get_epsilon()
@@ -122,9 +131,9 @@ fit        = algorithms[algorithm]
 G          = funcs[P.get_function()]
 
 # read data and add ownership column
-data = pd.read_csv(filename, header=None).iloc[:, :2].values
-filler = np.full([data.shape[0], 1], neuron_count, dtype=int)
-np.append(data, filler, axis=1)
+data   = pd.read_csv(filename, header=None).iloc[:, columns].values
+filler = np.zeros([data.shape[0], 1], dtype=int)
+data   = np.append(data, filler, axis=1)
 
 # make and initialize neurons/centroids
 N = make_neurons(unit_class, neuron_count, data)
@@ -145,10 +154,15 @@ errors = []
 for epoch in range(loop_max):
     rnd.shuffle(data)
 
-    plot(data, dataset, N, algorithm, epoch, 'b')
+    if no_plot:
+        plot(data, dataset, N, algorithm, epoch, 'b')
     
+    prev_ownership = np.array(data[:, -1], copy=True)
     error = fit(data, N)      
     errors.append(error)
+    
+#    if np.array_equal(prev_ownership, data[:, -1]):
+#        break
     
 if no_errors:
     plot_error(errors, 'b')
