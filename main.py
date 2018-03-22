@@ -2,6 +2,7 @@ import numpy.random as rnd
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import scipy.misc as sci
 
 from neuron import *
 from rank import *
@@ -49,13 +50,12 @@ def plot_error(errors, color):
     
 def kohonen_fit(data, neurons):
     error = 0
-    for i, xy in enumerate(data[:, :-1]):
+    for xy in data[:, :-1]:
         rank = Rank()
         for n in neurons:
             rank[n] = n.distance(xy)
                
         bmu = rank.best()
-        data[i, -1] = bmu.id
         w_0 = bmu.pos
         error += bmu.distance(xy)
         for n in rank:
@@ -65,14 +65,12 @@ def kohonen_fit(data, neurons):
 
 def neural_gas_fit(data, neurons):
     error = 0
-    for i, xy in enumerate(data[:, :-1]):
+    for xy in data[:, :-1]:
         rank = Rank()
         for n in neurons:
             rank[n] = n.distance(xy)
             
-        bmu = rank.best()
-        data[i, -1] = bmu.id
-        error += bmu.distance(xy)
+        error += rank.best().distance(xy)
         for j, n in enumerate(rank):
             n.update(j, xy)
             
@@ -80,13 +78,12 @@ def neural_gas_fit(data, neurons):
 
 def k_means_fit(data, centroids):
     error = 0
-    for i, xy in enumerate(data[:, :-1]):
+    for xy in data[:, :-1]:
         rank = Rank()
         for c in centroids:
             rank[c] = c.distance(xy)
 
         bmu = rank.best()
-        data[i, -1] = bmu.id
         bmu.add_datum(xy)
         error += bmu.distance(xy)
         
@@ -105,7 +102,7 @@ def h(d, l):
 
 # dictionaries for setting constants
 algorithms = {'kohonen':kohonen_fit, 'neural-gas':neural_gas_fit, 'k-means':k_means_fit}
-datasets = {'iris':'iris.data'}
+datasets = {'iris':'iris.data', 'house':'house.png'}
 central_structures = {'kohonen':NeuronKHN, 'neural-gas':NeuronNG, 'k-means':Centroid}
 funcs = {'step':h, 'other':g}
 columns_d = {'iris':[0, 1]}
@@ -115,13 +112,6 @@ P = Parsing()
 P.init_parser(algorithms.keys(), datasets.keys(), funcs.keys())
 P.create_parser()
 P.parse()
-
-no_errors    = P.get_no_errors()
-no_plot      = P.get_no_plot()
-if no_plot:
-    columns = columns_d[P.get_dataset()]
-else:
-    columns = slice(0, -1)
 
 lamb    = P.get_lambda()
 epsilon = P.get_epsilon()
@@ -137,9 +127,33 @@ unit_class = central_structures[algorithm]
 fit        = algorithms[algorithm]
 G          = funcs[P.get_function()]
 
-# read data, add ownership column, normalize
-data   = pd.read_csv(filename, header=None).iloc[:, columns].values
-normalize(data)
+no_errors = P.get_no_errors()
+no_plot   = P.get_no_plot()
+image     = P.get_image()
+
+if image:
+    no_plot = False
+    
+if no_plot:
+    columns = columns_d[dataset]
+else:
+    columns = slice(0, -1)
+
+# read data, normalize
+if image:
+    step = 4
+    img = sci.imread(image)
+    data = []
+    for i in range(0, img.shape[0], step):
+        for j in range(0, img.shape[1], step):
+            data.append([val for x in range(i, i+step) for y in range(j, j+step) for val in img[x, y, :]])
+    
+    data = np.array(data)
+else:
+    data = pd.read_csv(filename, header=None).iloc[:, columns].values
+    normalize(data)
+
+# add ownership column
 filler = np.zeros([data.shape[0], 1], dtype=int)
 data   = np.append(data, filler, axis=1)
 
@@ -165,7 +179,7 @@ for epoch in range(loop_max):
     if no_plot:
         plot(data, dataset, N, algorithm, epoch, 'b')
     
-    prev_ownership = np.array(data[:, -1], copy=True)
+    #prev_ownership = np.array(data[:, -1], copy=True)
     error = fit(data, N)      
     errors.append(error)
     

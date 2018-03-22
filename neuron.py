@@ -1,12 +1,13 @@
 import numpy as np
+import math
 
 class Unit:
 
     def __init__(self, coords):
-        self._coords = coords
+        self._coords = np.array(coords)
         
     def distance(self, point):
-        return np.sqrt(sum([(a-b)**2 for a, b in zip(self._coords, point)]))
+        return np.linalg.norm(self._coords-point)
         
     def __repr__(self):
         string = "(" + ", ".join(["{}" for _ in self._coords]) + ")"
@@ -27,19 +28,18 @@ class Unit:
 class Centroid(Unit):
 
     def __init__(self, coords):
-        self._data_sum = [0 for _ in coords]
+        self._data_sum = np.array(0)
         self._data_count = 0
         super().__init__(coords)
         
     def add_datum(self, point):
-        for i, x_i in enumerate(point):
-            self._data_sum[i] += x_i
+        self._data_sum = self._data_sum + point
         self._data_count += 1
         
     def update(self):
         if self._data_count > 0:
-            self._coords = [d/self._data_count for d in self._data_sum]
-            self._data_sum = [0 for _ in self._data_sum]
+            self._coords = self._data_sum/self._data_count
+            self._data_sum = np.array(0)
             self._data_count = 0
 
 class Neuron(Unit):
@@ -61,7 +61,7 @@ class NeuronNG(Neuron):
         NeuronNG._coefficient = [NeuronNG._epsilon * np.e**(-i/NeuronNG._lambda) for i in range(n)]
     
     def update(self, k, point):
-        self._coords = [c + (self._coefficient[k] * (point[i] - c)) for i, c in enumerate(self._coords)]
+        self._coords += self._coefficient[k] * (point - self._coords)
         
 class NeuronKHN(Neuron):
 
@@ -71,5 +71,5 @@ class NeuronKHN(Neuron):
         
     def update(self, w_0, point):
         EGd = self._epsilon * NeuronKHN._g(self.distance(w_0), l=self._lambda)
-        self._coords = [c + (EGd * (point[i] - c)) for i, c in enumerate(self._coords)]
+        self._coords += EGd * (point - self._coords)
 
