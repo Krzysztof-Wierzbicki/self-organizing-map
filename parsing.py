@@ -27,8 +27,6 @@ class Parsing:
                             help='lambda value, sensible values: 0.0000001 for kohonen other, 0.5 for neural gas and kohonen step')
         self._parser.add_argument('-e', '--epsilon', default=0.01, type=float, 
                             help='epsilon value, the learning rate') 
-        self._parser.add_argument('-i', '--image', default=None, 
-                            help='image file to compress') 
         
     def parse(self):
         self._args = self._parser.parse_args()
@@ -69,6 +67,4 @@ class Parsing:
         
     def get_no_plot(self):
         return self._args.no_plot
-        
-    def get_image(self):
-        return self._args.image
+

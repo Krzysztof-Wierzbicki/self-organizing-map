@@ -21,7 +21,7 @@ def normalize(data):
 
 def make_neurons(cls, neuron_count, data):
     '''create neurons using normal distribution for given data'''
-    return [cls([rnd.normal(m, s) for m, s in zip(data[:, :-1].mean(axis=0), data[:, :-1].std(axis=0))]) for _ in range(neuron_count)]
+    return [cls([rnd.normal(m, s) for m, s in zip(data.mean(axis=0), data.std(axis=0))]) for _ in range(neuron_count)]
     
 def plot(data, data_name, neurons, algorithm, epoch, color):
     '''plot data and central structures'''
@@ -50,7 +50,7 @@ def plot_error(errors, color):
     
 def kohonen_fit(data, neurons):
     error = 0
-    for xy in data[:, :-1]:
+    for xy in data:
         rank = Rank()
         for n in neurons:
             rank[n] = n.distance(xy)
@@ -65,7 +65,7 @@ def kohonen_fit(data, neurons):
 
 def neural_gas_fit(data, neurons):
     error = 0
-    for xy in data[:, :-1]:
+    for xy in data:
         rank = Rank()
         for n in neurons:
             rank[n] = n.distance(xy)
@@ -78,7 +78,7 @@ def neural_gas_fit(data, neurons):
 
 def k_means_fit(data, centroids):
     error = 0
-    for xy in data[:, :-1]:
+    for xy in data:
         rank = Rank()
         for c in centroids:
             rank[c] = c.distance(xy)
@@ -102,7 +102,7 @@ def h(d, l):
 
 # dictionaries for setting constants
 algorithms = {'kohonen':kohonen_fit, 'neural-gas':neural_gas_fit, 'k-means':k_means_fit}
-datasets = {'iris':'iris.data', 'house':'house.png'}
+datasets = {'iris':'iris.data'}
 central_structures = {'kohonen':NeuronKHN, 'neural-gas':NeuronNG, 'k-means':Centroid}
 funcs = {'step':h, 'other':g}
 columns_d = {'iris':[0, 1]}
@@ -129,33 +129,15 @@ G          = funcs[P.get_function()]
 
 no_errors = P.get_no_errors()
 no_plot   = P.get_no_plot()
-image     = P.get_image()
-
-if image:
-    no_plot = False
-    
+ 
 if no_plot:
     columns = columns_d[dataset]
 else:
     columns = slice(0, -1)
 
 # read data, normalize
-if image:
-    step = 4
-    img = sci.imread(image)
-    data = []
-    for i in range(0, img.shape[0], step):
-        for j in range(0, img.shape[1], step):
-            data.append([val for x in range(i, i+step) for y in range(j, j+step) for val in img[x, y, :]])
-    
-    data = np.array(data)
-else:
-    data = pd.read_csv(filename, header=None).iloc[:, columns].values
-    normalize(data)
-
-# add ownership column
-filler = np.zeros([data.shape[0], 1], dtype=int)
-data   = np.append(data, filler, axis=1)
+data = pd.read_csv(filename, header=None).iloc[:, columns].values
+normalize(data)
 
 # make and initialize neurons/centroids
 N = make_neurons(unit_class, neuron_count, data)
